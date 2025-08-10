@@ -9,4 +9,4 @@ export function getAnthropicClient(apiKey?: string) {
   return new Anthropic({ apiKey: key });
 }
 
-export const DEFAULT_SONNET_MODEL = "claude-3-5-sonnet-20240620";
+export const DEFAULT_SONNET_MODEL = "claude-sonnet-4-20250514";

@@ -14,10 +14,11 @@ export async function GET(req: NextRequest) {
   try {
     const data = await fetchPostWithComments(parsed.data.permalink);
     return NextResponse.json(data);
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message ?? "Failed" },
-      { status: 500 }
-    );
+  } catch (err) {
+    let message = "Failed";
+    if (err instanceof Error) {
+      message = err.message || message;
+    }
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
