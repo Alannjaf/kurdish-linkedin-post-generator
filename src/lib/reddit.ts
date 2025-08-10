@@ -18,6 +18,28 @@ export type RedditComment = {
   score: number;
 };
 
+// Narrow type definitions for Reddit's JSON
+type RedditListingChild<T> = {
+  kind: string;
+  data: T;
+};
+
+type RedditSearchResponse = {
+  data?: {
+    children?: Array<RedditListingChild<RedditPost>>;
+  };
+};
+
+type RedditCommentsChild = {
+  kind: string; // "t1" for comment
+  data: RedditComment;
+};
+
+type RedditPostAndCommentsResponse = [
+  { data?: { children?: Array<RedditListingChild<RedditPost>> } },
+  { data?: { children?: Array<RedditCommentsChild> } }
+];
+
 export async function searchReddit(
   query: string,
   limit = 15,
@@ -33,11 +55,11 @@ export async function searchReddit(
   u.searchParams.set("limit", String(limit));
   const res = await fetch(u.toString(), { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch Reddit search");
-  const json = await res.json();
+  const json: RedditSearchResponse = await res.json();
   const children = json?.data?.children ?? [];
-  return children.map((c: any) => {
+  return children.map((c: RedditListingChild<RedditPost>) => {
     const d = c.data;
-    return {
+    const post: RedditPost = {
       id: d.id,
       title: d.title,
       selftext: d.selftext,
@@ -46,7 +68,8 @@ export async function searchReddit(
       author: d.author,
       permalink: d.permalink,
       num_comments: d.num_comments,
-    } as RedditPost;
+    };
+    return post;
   });
 }
 
@@ -56,7 +79,7 @@ export async function fetchPostWithComments(
   const url = `https://www.reddit.com${permalink}.json?limit=100`;
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch post/comments");
-  const json = await res.json();
+  const json: RedditPostAndCommentsResponse = await res.json();
 
   const postData = json?.[0]?.data?.children?.[0]?.data;
   if (!postData) throw new Error("Post not found");
@@ -73,15 +96,16 @@ export async function fetchPostWithComments(
 
   const commentsChildren = json?.[1]?.data?.children ?? [];
   const comments: RedditComment[] = commentsChildren
-    .filter((c: any) => c.kind === "t1")
-    .map((c: any) => {
+    .filter((c: RedditCommentsChild) => c.kind === "t1")
+    .map((c: RedditCommentsChild) => {
       const d = c.data;
-      return {
+      const comment: RedditComment = {
         id: d.id,
         author: d.author,
         body: d.body,
         score: d.score,
-      } as RedditComment;
+      };
+      return comment;
     });
 
   return { post, comments };
