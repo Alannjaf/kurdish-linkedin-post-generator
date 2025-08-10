@@ -42,6 +42,8 @@ export default function Home() {
   const [imageB64, setImageB64] = useState("");
   const [loadingClaude, setLoadingClaude] = useState(false);
   const [loadingImage, setLoadingImage] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState<"preview" | "image">("preview");
 
   //
 
@@ -180,159 +182,45 @@ export default function Home() {
   }, [useHashtags]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-white dark:from-slate-900 dark:via-slate-950 dark:to-black">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white">
       <div className="max-w-7xl mx-auto px-5 py-8">
-        <header className="mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/70 dark:bg-white/5 px-3 py-1 border border-black/5 shadow-sm">
-            <span className="text-xs text-gray-600 dark:text-gray-300">
-              Reddit → Sorani → Image
-            </span>
+        <header className="mb-8 flex items-center justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 border border-black/5 shadow-sm">
+              <span className="text-xs text-gray-600">
+                Reddit → Sorani → Image
+              </span>
+            </div>
+            <h1 className="mt-3 text-3xl md:text-4xl font-semibold tracking-tight">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600">
+                Kurdish LinkedIn Post Generator
+              </span>
+            </h1>
+            <p className="mt-2 text-sm text-gray-600 max-w-2xl">
+              Search trending Reddit topics, transform to polished Sorani posts
+              with your preferred style and hook, and generate a matching
+              visual.
+            </p>
           </div>
-          <h1 className="mt-3 text-3xl md:text-4xl font-semibold tracking-tight">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600">
-              Kurdish LinkedIn Post Generator
-            </span>
-          </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 max-w-2xl">
-            Search trending Reddit topics, transform to polished Sorani posts
-            with your preferred style and hook, and generate a matching visual.
-          </p>
+          <div className="flex items-center gap-2">
+            <button
+              className="px-3 py-2 rounded-lg border bg-white hover:bg-gray-50"
+              onClick={() => setShowSettings(true)}
+            >
+              Settings
+            </button>
+          </div>
         </header>
 
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <div className="lg:col-span-1 space-y-4">
-            <div className="rounded-2xl border border-black/5 bg-white/80 dark:bg-white/5 backdrop-blur p-4 shadow-sm">
-              <h3 className="font-medium mb-3">API Keys</h3>
-              <div className="space-y-3">
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                  Anthropic
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type={showAnthropicKey ? "text" : "password"}
-                    className="w-full border rounded-lg px-3 py-2 bg-white/70 dark:bg-slate-900/50"
-                    placeholder="anthropic_key"
-                    value={anthropicKey}
-                    onChange={(e) => setAnthropicKey(e.target.value)}
-                  />
-                  <button
-                    className="px-3 py-2 text-xs rounded-lg border bg-white hover:bg-gray-50 dark:bg-slate-900 dark:hover:bg-slate-800"
-                    onClick={() => setShowAnthropicKey((s) => !s)}
-                  >
-                    {showAnthropicKey ? "Hide" : "Show"}
-                  </button>
-                </div>
-
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                  OpenAI
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type={showOpenAIKey ? "text" : "password"}
-                    className="w-full border rounded-lg px-3 py-2 bg-white/70 dark:bg-slate-900/50"
-                    placeholder="openai_key"
-                    value={openaiKey}
-                    onChange={(e) => setOpenaiKey(e.target.value)}
-                  />
-                  <button
-                    className="px-3 py-2 text-xs rounded-lg border bg-white hover:bg-gray-50 dark:bg-slate-900 dark:hover:bg-slate-800"
-                    onClick={() => setShowOpenAIKey((s) => !s)}
-                  >
-                    {showOpenAIKey ? "Hide" : "Show"}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-black/5 bg-white/80 dark:bg-white/5 backdrop-blur p-4 shadow-sm">
-              <h3 className="font-medium mb-3">Style & Hook</h3>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                Style
-              </label>
-              <input
-                className="w-full border rounded-lg px-3 py-2 bg-white/70 dark:bg-slate-900/50 mb-2"
-                value={style}
-                onChange={(e) => setStyle(e.target.value)}
-              />
-              <div className="flex flex-wrap gap-2 mb-3">
-                {[
-                  "Professional, concise",
-                  "Story-driven, warm",
-                  "Bold, punchy",
-                  "Educational, structured",
-                ].map((s) => (
-                  <button
-                    key={s}
-                    className="text-xs px-2.5 py-1 rounded-full border hover:bg-gray-50 dark:hover:bg-slate-800"
-                    onClick={() => setStyle(s)}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                Hook
-              </label>
-              <input
-                className="w-full border rounded-lg px-3 py-2 bg-white/70 dark:bg-slate-900/50 mb-2"
-                value={hook}
-                onChange={(e) => setHook(e.target.value)}
-              />
-              <div className="flex flex-wrap gap-2">
-                {[
-                  "Question hook",
-                  "Bold claim",
-                  "Counter-intuitive insight",
-                  "Short story",
-                ].map((h) => (
-                  <button
-                    key={h}
-                    className="text-xs px-2.5 py-1 rounded-full border hover:bg-gray-50 dark:hover:bg-slate-800"
-                    onClick={() => setHook(h)}
-                  >
-                    {h}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                <input
-                  id="use-emojis"
-                  type="checkbox"
-                  className="h-4 w-4"
-                  checked={useEmojis}
-                  onChange={(e) => setUseEmojis(e.target.checked)}
-                />
-                <label
-                  htmlFor="use-emojis"
-                  className="text-sm text-gray-700 dark:text-gray-200"
-                >
-                  Use emojis in the post (emoji bullets and numbers)
-                </label>
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <input
-                  id="use-hashtags"
-                  type="checkbox"
-                  className="h-4 w-4"
-                  checked={useHashtags}
-                  onChange={(e) => setUseHashtags(e.target.checked)}
-                />
-                <label
-                  htmlFor="use-hashtags"
-                  className="text-sm text-gray-700 dark:text-gray-200"
-                >
-                  Include relevant hashtags at the end
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-2 rounded-2xl border border-black/5 bg-white/80 dark:bg-white/5 backdrop-blur p-5 shadow-sm">
-            <div className="flex flex-col gap-3">
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+          {/* Left content */}
+          <div className="lg:col-span-8 space-y-4">
+            {/* Search header */}
+            <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <input
-                    className="w-full border rounded-xl pl-10 pr-3 py-3 bg-white/70 dark:bg-slate-900/50"
+                    className="w-full border rounded-xl pl-10 pr-3 py-3 bg-white"
                     value={query}
                     placeholder="Search Reddit niche (e.g., AI marketing, startups, productivity)"
                     onChange={(e) => setQuery(e.target.value)}
@@ -342,7 +230,7 @@ export default function Home() {
                   </span>
                 </div>
                 <select
-                  className="border rounded-xl px-2 py-2 bg-white/70 dark:bg-slate-900/50"
+                  className="border rounded-xl px-2 py-2 bg-white"
                   value={timeframe}
                   onChange={(e) =>
                     setTimeframe(
@@ -372,197 +260,348 @@ export default function Home() {
                   {loadingSearch ? "Searching…" : "Search"}
                 </button>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-2">
-                <div className="rounded-xl border border-black/5 bg-white/70 dark:bg-slate-900/40 p-3 max-h-[520px] overflow-auto">
-                  <h4 className="text-sm font-medium mb-2">Results</h4>
-                  <div className="space-y-2">
-                    {loadingSearch && (
-                      <div className="animate-pulse space-y-2">
-                        {Array.from({ length: 4 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="h-16 rounded-lg bg-gray-100 dark:bg-slate-800"
-                          />
-                        ))}
-                      </div>
-                    )}
-                    {posts?.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => pickPost(p.permalink)}
-                        className={`block w-full text-left rounded-lg border p-3 transition hover:bg-gray-50 dark:hover:bg-slate-800 ${
-                          selectedPermalink === p.permalink
-                            ? "border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/30"
-                            : "border-gray-200 dark:border-slate-800"
-                        }`}
-                      >
-                        <div className="text-xs text-gray-500">
-                          r/{p.subreddit} • {p.num_comments} comments
-                        </div>
-                        <div className="font-medium line-clamp-2">
-                          {p.title}
-                        </div>
-                        {p.selftext && (
-                          <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 mt-1">
-                            {p.selftext}
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                    {!posts?.length && !loadingSearch && (
-                      <div className="text-sm text-gray-500">No results</div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-black/5 bg-white/70 dark:bg-slate-900/40 p-3">
-                  <h4 className="text-sm font-medium mb-2">Selected</h4>
-                  {loadingPost ? (
-                    <div className="h-64 rounded-lg border bg-white/60 dark:bg-slate-900/30 p-3 animate-pulse space-y-2">
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="h-4 rounded bg-gray-100 dark:bg-slate-800"
-                        />
+            {/* Results + Selected */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-xl border border-black/5 bg-white p-3 max-h-[520px] overflow-auto">
+                <h4 className="text-sm font-medium mb-2">Results</h4>
+                <div className="space-y-2">
+                  {loadingSearch && (
+                    <div className="animate-pulse space-y-2">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="h-16 rounded-lg bg-gray-100" />
                       ))}
                     </div>
-                  ) : (
-                    <textarea
-                      className="h-64 w-full resize-none rounded-lg border bg-white/60 dark:bg-slate-900/30 p-3"
-                      value={selectedText}
-                      onChange={(e) => setSelectedText(e.target.value)}
-                      placeholder="Select a post, or paste/edit content here"
-                    />
                   )}
+                  {posts?.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => pickPost(p.permalink)}
+                      className={`block w-full text-left rounded-lg border p-3 transition hover:bg-gray-50 ${
+                        selectedPermalink === p.permalink
+                          ? "border-indigo-500 bg-indigo-50/60"
+                          : "border-gray-200"
+                      }`}
+                    >
+                      <div className="text-xs text-gray-500">
+                        r/{p.subreddit} • {p.num_comments} comments
+                      </div>
+                      <div className="font-medium line-clamp-2">{p.title}</div>
+                      {p.selftext && (
+                        <div className="text-xs text-gray-600 line-clamp-2 mt-1">
+                          {p.selftext}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                  {!posts?.length && !loadingSearch && (
+                    <div className="text-sm text-gray-500">No results</div>
+                  )}
+                </div>
+              </div>
 
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <button
-                      className="px-4 py-2 rounded-lg text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 disabled:opacity-60"
-                      onClick={runClaude}
-                      disabled={!selectedText || loadingClaude}
-                    >
-                      {loadingClaude ? "Generating Sorani…" : "Generate Sorani"}
-                    </button>
-                    <button
-                      className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-50 dark:bg-slate-900 dark:hover:bg-slate-800 disabled:opacity-60"
-                      onClick={runImage}
-                      disabled={!imagePrompt || loadingImage}
-                    >
-                      {loadingImage ? "Generating Image…" : "Generate Image"}
-                    </button>
+              <div className="rounded-xl border border-black/5 bg-white p-3">
+                <h4 className="text-sm font-medium mb-2">Selected</h4>
+                {loadingPost ? (
+                  <div className="h-64 rounded-lg border bg-white/60 p-3 animate-pulse space-y-2">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="h-4 rounded bg-gray-100" />
+                    ))}
                   </div>
+                ) : (
+                  <textarea
+                    className="h-64 w-full resize-none rounded-lg border bg-white/60 p-3"
+                    value={selectedText}
+                    onChange={(e) => setSelectedText(e.target.value)}
+                    placeholder="Select a post, or paste/edit content here"
+                  />
+                )}
+
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <button
+                    className="px-4 py-2 rounded-lg text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 disabled:opacity-60"
+                    onClick={runClaude}
+                    disabled={!selectedText || loadingClaude}
+                  >
+                    {loadingClaude ? "Generating Sorani…" : "Generate Sorani"}
+                  </button>
+                  <button
+                    className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-50 disabled:opacity-60"
+                    onClick={runImage}
+                    disabled={!imagePrompt || loadingImage}
+                  >
+                    {loadingImage ? "Generating Image…" : "Generate Image"}
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-black/5 bg-white/80 dark:bg-white/5 backdrop-blur p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-medium">LinkedIn Preview (RTL)</h2>
-              <div className="flex gap-2">
+            {/* Preview / Image Tabs */}
+            <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+              <div className="flex gap-2 mb-4">
                 <button
-                  className="px-3 py-1.5 text-xs rounded-lg border bg-white hover:bg-gray-50 dark:bg-slate-900 dark:hover:bg-slate-800"
-                  onClick={() => navigator.clipboard.writeText(sorani)}
-                  disabled={!sorani}
+                  className={`px-3 py-1.5 text-sm rounded-lg border ${
+                    activeTab === "preview"
+                      ? "bg-gray-50 border-gray-300"
+                      : "bg-white"
+                  }`}
+                  onClick={() => setActiveTab("preview")}
                 >
-                  Copy text
+                  LinkedIn Preview
                 </button>
+                <button
+                  className={`px-3 py-1.5 text-sm rounded-lg border ${
+                    activeTab === "image"
+                      ? "bg-gray-50 border-gray-300"
+                      : "bg-white"
+                  }`}
+                  onClick={() => setActiveTab("image")}
+                >
+                  Image
+                </button>
+                <div className="flex-1" />
+                {activeTab === "preview" ? (
+                  <button
+                    className="px-3 py-1.5 text-xs rounded-lg border bg-white hover:bg-gray-50"
+                    onClick={() => navigator.clipboard.writeText(sorani)}
+                    disabled={!sorani}
+                  >
+                    Copy text
+                  </button>
+                ) : (
+                  <button
+                    className="px-3 py-1.5 text-xs rounded-lg border bg-white hover:bg-gray-50"
+                    onClick={() => {
+                      if (!imageB64) return;
+                      const link = document.createElement("a");
+                      link.href = `data:image/png;base64,${imageB64}`;
+                      link.download = "generated.png";
+                      link.click();
+                    }}
+                    disabled={!imageB64}
+                  >
+                    Download
+                  </button>
+                )}
               </div>
-            </div>
-            {/* In-place editing in preview below */}
-            <div
-              dir="rtl"
-              lang="ckb"
-              className="rounded-xl border bg-white/90 dark:bg-slate-900/40 overflow-hidden max-w-[680px] mx-auto"
-            >
-              {/* Header */}
-              <div className="flex items-start gap-3 p-3 flex-row-reverse">
-                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-slate-700" />
-                <div className="flex-1 text-right">
-                  <div className="text-sm font-semibold">ناوی تۆ</div>
-                  <div className="text-[11px] text-gray-500">
-                    کاتێك: ئێستا • Public
+
+              {activeTab === "preview" ? (
+                <div
+                  dir="rtl"
+                  lang="ckb"
+                  className="rounded-xl border bg-white/90 overflow-hidden max-w-[680px] mx-auto"
+                >
+                  <div className="flex items-start gap-3 p-3 flex-row-reverse">
+                    <div className="w-10 h-10 rounded-full bg-gray-200" />
+                    <div className="flex-1 text-right">
+                      <div className="text-sm font-semibold">ناوی تۆ</div>
+                      <div className="text-[11px] text-gray-500">
+                        کاتێك: ئێستا • Public
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className="px-3 pb-3 whitespace-pre-wrap text-right leading-relaxed outline-none"
+                    contentEditable
+                    suppressContentEditableWarning
+                    onInput={(e) =>
+                      setSorani((e.target as HTMLDivElement).innerText)
+                    }
+                  >
+                    {sorani || "—"}
+                  </div>
+                  {imageB64 ? (
+                    <div className="w-full bg-black/5">
+                      <NextImage
+                        alt="generated"
+                        src={`data:image/png;base64,${imageB64}`}
+                        width={1536}
+                        height={1024}
+                        className="w-full h-auto"
+                      />
+                    </div>
+                  ) : null}
+                  <div className="border-t px-3 py-2 text-[11px] text-gray-500 flex items-center justify-between">
+                    <span>👍 0 • 💬 0</span>
+                    <span>↗️ Share</span>
                   </div>
                 </div>
-              </div>
-              {/* Text (editable) */}
-              <div
-                className="px-3 pb-3 whitespace-pre-wrap text-right leading-relaxed outline-none"
-                contentEditable
-                suppressContentEditableWarning
-                onInput={(e) =>
-                  setSorani((e.target as HTMLDivElement).innerText)
-                }
-              >
-                {sorani || "—"}
-              </div>
-              {/* Image (optional) */}
-              {imageB64 ? (
-                <div className="w-full bg-black/5">
-                  <NextImage
-                    alt="generated"
-                    src={`data:image/png;base64,${imageB64}`}
-                    width={1536}
-                    height={1024}
-                    className="w-full h-auto"
+              ) : (
+                <div>
+                  <div className="min-h-[240px] flex items-center justify-center rounded-lg border bg-white/60">
+                    {imageB64 ? (
+                      <NextImage
+                        alt="generated"
+                        src={`data:image/png;base64,${imageB64}`}
+                        width={1024}
+                        height={1024}
+                        className="max-h-[420px] w-auto h-auto rounded-lg shadow"
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-500">—</div>
+                    )}
+                  </div>
+                  <h3 className="text-sm mt-3 text-gray-600">Prompt</h3>
+                  <textarea
+                    className="text-sm w-full min-h-[100px] resize-y rounded-lg border bg-white/60 p-3"
+                    value={imagePrompt}
+                    onChange={(e) => setImagePrompt(e.target.value)}
+                    placeholder="Write or edit the image prompt..."
                   />
                 </div>
-              ) : null}
-              {/* Footer actions (visual only) */}
-              <div className="border-t px-3 py-2 text-[11px] text-gray-500 flex items-center justify-between">
-                <span>👍 0 • 💬 0</span>
-                <span>↗️ Share</span>
-              </div>
+              )}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-black/5 bg-white/80 dark:bg-white/5 backdrop-blur p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-medium">Image</h2>
-              <div className="flex gap-2">
-                <button
-                  className="px-3 py-1.5 text-xs rounded-lg border bg-white hover:bg-gray-50 dark:bg-slate-900 dark:hover:bg-slate-800"
-                  onClick={() => {
-                    if (!imageB64) return;
-                    const link = document.createElement("a");
-                    link.href = `data:image/png;base64,${imageB64}`;
-                    link.download = "generated.png";
-                    link.click();
-                  }}
-                  disabled={!imageB64}
-                >
-                  Download
-                </button>
+          {/* Right sidebar (sticky) */}
+          <div className="lg:col-span-4">
+            <div className="sticky top-6 space-y-4">
+              <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
+                <h3 className="font-medium mb-3">Style & Hook</h3>
+                <label className="block text-xs font-medium text-gray-600">
+                  Style
+                </label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2 bg-white mb-2"
+                  value={style}
+                  onChange={(e) => setStyle(e.target.value)}
+                />
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {[
+                    "Professional, concise",
+                    "Story-driven, warm",
+                    "Bold, punchy",
+                    "Educational, structured",
+                  ].map((s) => (
+                    <button
+                      key={s}
+                      className="text-xs px-2.5 py-1 rounded-full border hover:bg-gray-50"
+                      onClick={() => setStyle(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <label className="block text-xs font-medium text-gray-600">
+                  Hook
+                </label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2 bg-white mb-2"
+                  value={hook}
+                  onChange={(e) => setHook(e.target.value)}
+                />
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "Question hook",
+                    "Bold claim",
+                    "Counter-intuitive insight",
+                    "Short story",
+                  ].map((h) => (
+                    <button
+                      key={h}
+                      className="text-xs px-2.5 py-1 rounded-full border hover:bg-gray-50"
+                      onClick={() => setHook(h)}
+                    >
+                      {h}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <input
+                    id="use-emojis"
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={useEmojis}
+                    onChange={(e) => setUseEmojis(e.target.checked)}
+                  />
+                  <label htmlFor="use-emojis" className="text-sm text-gray-700">
+                    Use emojis in the post (emoji bullets and numbers)
+                  </label>
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    id="use-hashtags"
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={useHashtags}
+                    onChange={(e) => setUseHashtags(e.target.checked)}
+                  />
+                  <label
+                    htmlFor="use-hashtags"
+                    className="text-sm text-gray-700"
+                  >
+                    Include relevant hashtags at the end
+                  </label>
+                </div>
               </div>
             </div>
-            <div className="min-h-[240px] flex items-center justify-center rounded-lg border bg-white/60 dark:bg-slate-900/30">
-              {imageB64 ? (
-                <NextImage
-                  alt="generated"
-                  src={`data:image/png;base64,${imageB64}`}
-                  width={1024}
-                  height={1024}
-                  className="max-h-[420px] w-auto h-auto rounded-lg shadow"
-                />
-              ) : (
-                <div className="text-sm text-gray-500">—</div>
-              )}
-            </div>
-            <h3 className="text-sm mt-3 text-gray-600 dark:text-gray-300">
-              Prompt
-            </h3>
-            <textarea
-              className="text-sm w-full min-h-[100px] resize-y rounded-lg border bg-white/60 dark:bg-slate-900/30 p-3"
-              value={imagePrompt}
-              onChange={(e) => setImagePrompt(e.target.value)}
-              placeholder="Write or edit the image prompt..."
-            />
           </div>
         </section>
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowSettings(false)}
+          />
+          <div className="relative w-full max-w-lg mx-auto rounded-2xl border border-black/10 bg-white p-5 shadow-xl">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium">Settings</h3>
+              <button
+                className="px-3 py-1.5 text-xs rounded-lg border bg-white hover:bg-gray-50"
+                onClick={() => setShowSettings(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600">
+                  Anthropic
+                </label>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type={showAnthropicKey ? "text" : "password"}
+                    className="w-full border rounded-lg px-3 py-2 bg-white"
+                    placeholder="anthropic_key"
+                    value={anthropicKey}
+                    onChange={(e) => setAnthropicKey(e.target.value)}
+                  />
+                  <button
+                    className="px-3 py-2 text-xs rounded-lg border bg-white hover:bg-gray-50"
+                    onClick={() => setShowAnthropicKey((s) => !s)}
+                  >
+                    {showAnthropicKey ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600">
+                  OpenAI
+                </label>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type={showOpenAIKey ? "text" : "password"}
+                    className="w-full border rounded-lg px-3 py-2 bg-white"
+                    placeholder="openai_key"
+                    value={openaiKey}
+                    onChange={(e) => setOpenaiKey(e.target.value)}
+                  />
+                  <button
+                    className="px-3 py-2 text-xs rounded-lg border bg-white hover:bg-gray-50"
+                    onClick={() => setShowOpenAIKey((s) => !s)}
+                  >
+                    {showOpenAIKey ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
