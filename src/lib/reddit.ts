@@ -1,4 +1,5 @@
 // Minimal Reddit client via public endpoints + OAuth if provided.
+import { env } from "@/lib/env";
 
 export type RedditPost = {
   id: string;
@@ -40,28 +41,76 @@ type RedditPostAndCommentsResponse = [
   { data?: { children?: Array<RedditCommentsChild> } }
 ];
 
+type RedditTokenResponse = {
+  access_token: string;
+  expires_in: number; // seconds
+  token_type: string; // "bearer"
+  scope?: string;
+};
+
+let cachedToken: { token: string; expiresAt: number } | null = null;
+
+async function getRedditAccessToken(): Promise<string | null> {
+  const clientId = env.REDDIT_CLIENT_ID;
+  const clientSecret = env.REDDIT_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+
+  const now = Date.now();
+  if (cachedToken && now < cachedToken.expiresAt - 60_000) {
+    return cachedToken.token;
+  }
+
+  const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const form = new URLSearchParams();
+  form.set("grant_type", "client_credentials");
+  form.set("duration", "temporary");
+  form.set("scope", "read");
+
+  const res = await fetch("https://www.reddit.com/api/v1/access_token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent":
+        "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
+      Accept: "application/json",
+    },
+    body: form.toString(),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    return null;
+  }
+  const json: RedditTokenResponse = await res.json();
+  const token = json.access_token;
+  const expiresAt = Date.now() + (json.expires_in ?? 3600) * 1000;
+  cachedToken = { token, expiresAt };
+  return token;
+}
+
 export async function searchReddit(
   query: string,
   limit = 15,
   sort: "hot" | "new" | "top" | "relevance" = "top",
   t: "hour" | "day" | "week" | "month" | "year" | "all" = "day"
 ): Promise<RedditPost[]> {
-  const u = new URL("https://www.reddit.com/search.json");
+  const token = await getRedditAccessToken();
+  const base = token ? "https://oauth.reddit.com" : "https://www.reddit.com";
+  const u = new URL("/search.json", base);
   u.searchParams.set("q", query);
   u.searchParams.set("sort", sort);
   if (sort === "top") {
     u.searchParams.set("t", t);
   }
   u.searchParams.set("limit", String(limit));
-  const res = await fetch(u.toString(), {
-    cache: "no-store",
-    headers: {
-      // Reddit requires a unique and descriptive User-Agent for API access
-      "User-Agent":
-        "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
-      Accept: "application/json",
-    },
-  });
+  u.searchParams.set("raw_json", "1");
+  const headers: Record<string, string> = {
+    "User-Agent":
+      "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
+    Accept: "application/json",
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(u.toString(), { cache: "no-store", headers });
   if (!res.ok) {
     let bodyText = "";
     try {
@@ -96,15 +145,16 @@ export async function searchReddit(
 export async function fetchPostWithComments(
   permalink: string
 ): Promise<{ post: RedditPost; comments: RedditComment[] }> {
-  const url = `https://www.reddit.com${permalink}.json?limit=100`;
-  const res = await fetch(url, {
-    cache: "no-store",
-    headers: {
-      "User-Agent":
-        "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
-      Accept: "application/json",
-    },
-  });
+  const token = await getRedditAccessToken();
+  const base = token ? "https://oauth.reddit.com" : "https://www.reddit.com";
+  const url = `${base}${permalink}.json?limit=100&raw_json=1`;
+  const headers: Record<string, string> = {
+    "User-Agent":
+      "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
+    Accept: "application/json",
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(url, { cache: "no-store", headers });
   if (!res.ok) {
     let bodyText = "";
     try {
