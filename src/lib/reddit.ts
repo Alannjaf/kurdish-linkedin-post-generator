@@ -51,16 +51,20 @@ type RedditPostAndCommentsResponse = [
 // Try multiple Reddit endpoints to bypass network blocks
 const REDDIT_ENDPOINTS = [
   "https://www.reddit.com",
-  "https://old.reddit.com", 
-  "https://reddit.com"
+  "https://old.reddit.com",
+  "https://reddit.com",
 ];
 
-async function tryRedditEndpoint(baseUrl: string, path: string): Promise<Response> {
+async function tryRedditEndpoint(
+  baseUrl: string,
+  path: string
+): Promise<Response> {
   const url = `${baseUrl}${path}`;
   const res = await fetch(url, {
     cache: "no-store",
     headers: {
-      "User-Agent": "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
+      "User-Agent":
+        "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
       Accept: "application/json",
     },
   });
@@ -75,9 +79,17 @@ export async function searchReddit(
 ): Promise<RedditPost[]> {
   // Try different search endpoints
   const searchPaths = [
-    `/search.json?q=${encodeURIComponent(query)}&sort=${sort}&limit=${limit}${sort === "top" ? `&t=${t}` : ""}`,
-    `/r/all/search.json?q=${encodeURIComponent(query)}&sort=${sort}&limit=${limit}${sort === "top" ? `&t=${t}` : ""}`,
-    `/search.json?q=${encodeURIComponent(query)}&sort=${sort}&limit=${limit}&raw_json=1${sort === "top" ? `&t=${t}` : ""}`
+    `/search.json?q=${encodeURIComponent(query)}&sort=${sort}&limit=${limit}${
+      sort === "top" ? `&t=${t}` : ""
+    }`,
+    `/r/all/search.json?q=${encodeURIComponent(
+      query
+    )}&sort=${sort}&limit=${limit}${sort === "top" ? `&t=${t}` : ""}`,
+    `/search.json?q=${encodeURIComponent(
+      query
+    )}&sort=${sort}&limit=${limit}&raw_json=1${
+      sort === "top" ? `&t=${t}` : ""
+    }`,
   ];
 
   for (const baseUrl of REDDIT_ENDPOINTS) {
@@ -112,11 +124,20 @@ export async function searchReddit(
   }
 
   // If all endpoints fail, try a different approach - fetch from popular subreddits
-  const popularSubreddits = ["programming", "technology", "science", "news", "worldnews"];
+  const popularSubreddits = [
+    "programming",
+    "technology",
+    "science",
+    "news",
+    "worldnews",
+  ];
   for (const subreddit of popularSubreddits) {
     for (const baseUrl of REDDIT_ENDPOINTS) {
       try {
-        const res = await tryRedditEndpoint(baseUrl, `/r/${subreddit}/hot.json?limit=${limit}`);
+        const res = await tryRedditEndpoint(
+          baseUrl,
+          `/r/${subreddit}/hot.json?limit=${limit}`
+        );
         if (res.ok) {
           const json: RedditSearchResponse = await res.json();
           const children = json?.data?.children ?? [];
@@ -126,11 +147,13 @@ export async function searchReddit(
             const filteredPosts = children
               .filter((c: RedditListingChild<RedditPost>) => {
                 const d = c.data;
-                return d.title.toLowerCase().includes(queryLower) || 
-                       d.selftext.toLowerCase().includes(queryLower);
+                return (
+                  d.title.toLowerCase().includes(queryLower) ||
+                  d.selftext.toLowerCase().includes(queryLower)
+                );
               })
               .slice(0, limit);
-            
+
             if (filteredPosts.length > 0) {
               return filteredPosts.map((c: RedditListingChild<RedditPost>) => {
                 const d = c.data;
@@ -156,7 +179,9 @@ export async function searchReddit(
     }
   }
 
-  throw new Error("All Reddit endpoints failed. The service may be temporarily unavailable.");
+  throw new Error(
+    "All Reddit endpoints failed. The service may be temporarily unavailable."
+  );
 }
 
 export async function fetchPostWithComments(
@@ -168,16 +193,17 @@ export async function fetchPostWithComments(
       const res = await fetch(url, {
         cache: "no-store",
         headers: {
-          "User-Agent": "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
+          "User-Agent":
+            "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
           Accept: "application/json",
         },
       });
-      
+
       if (res.ok) {
         const json: RedditPostAndCommentsResponse = await res.json();
         const postData = json[0]?.data?.children?.[0]?.data;
         const commentsData = json[1]?.data?.children ?? [];
-        
+
         if (postData) {
           const post: RedditPost = {
             id: postData.id,
@@ -189,7 +215,7 @@ export async function fetchPostWithComments(
             permalink: postData.permalink,
             num_comments: postData.num_comments,
           };
-          
+
           const comments: RedditComment[] = commentsData.map((c) => ({
             id: c.data.id,
             body: c.data.body,
@@ -197,7 +223,7 @@ export async function fetchPostWithComments(
             score: c.data.score,
             created_utc: c.data.created_utc,
           }));
-          
+
           return { post, comments };
         }
       }
@@ -206,6 +232,8 @@ export async function fetchPostWithComments(
       continue;
     }
   }
-  
-  throw new Error("Failed to fetch post and comments from all Reddit endpoints");
+
+  throw new Error(
+    "Failed to fetch post and comments from all Reddit endpoints"
+  );
 }
