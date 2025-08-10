@@ -57,7 +57,7 @@ export default function Home() {
         )}&sort=relevance&t=${timeframe}&titleOnly=true`
       );
       const json = await res.json();
-      setPosts(json.results ?? []);
+      setPosts(json.posts ?? []);
     } catch (e) {
       console.error(e);
     } finally {
