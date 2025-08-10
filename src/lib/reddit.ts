@@ -53,8 +53,28 @@ export async function searchReddit(
     u.searchParams.set("t", t);
   }
   u.searchParams.set("limit", String(limit));
-  const res = await fetch(u.toString(), { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to fetch Reddit search");
+  const res = await fetch(u.toString(), {
+    cache: "no-store",
+    headers: {
+      // Reddit requires a unique and descriptive User-Agent for API access
+      "User-Agent":
+        "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
+      Accept: "application/json",
+    },
+  });
+  if (!res.ok) {
+    let bodyText = "";
+    try {
+      bodyText = await res.text();
+    } catch {
+      // ignore
+    }
+    throw new Error(
+      `Failed to fetch Reddit search (status ${res.status})${
+        bodyText ? `: ${bodyText}` : ""
+      }`
+    );
+  }
   const json: RedditSearchResponse = await res.json();
   const children = json?.data?.children ?? [];
   return children.map((c: RedditListingChild<RedditPost>) => {
@@ -77,8 +97,27 @@ export async function fetchPostWithComments(
   permalink: string
 ): Promise<{ post: RedditPost; comments: RedditComment[] }> {
   const url = `https://www.reddit.com${permalink}.json?limit=100`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to fetch post/comments");
+  const res = await fetch(url, {
+    cache: "no-store",
+    headers: {
+      "User-Agent":
+        "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
+      Accept: "application/json",
+    },
+  });
+  if (!res.ok) {
+    let bodyText = "";
+    try {
+      bodyText = await res.text();
+    } catch {
+      // ignore
+    }
+    throw new Error(
+      `Failed to fetch post/comments (status ${res.status})${
+        bodyText ? `: ${bodyText}` : ""
+      }`
+    );
+  }
   const json: RedditPostAndCommentsResponse = await res.json();
 
   const postData = json?.[0]?.data?.children?.[0]?.data;
