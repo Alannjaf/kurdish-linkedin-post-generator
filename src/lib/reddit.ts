@@ -1,6 +1,5 @@
-// Minimal Reddit client using JSONP alternative endpoints
-// Reddit supports fetching JSON data by appending .json to URLs
-// This can bypass some network blocks and doesn't require OAuth
+// Minimal Reddit client using CORS proxy to bypass network blocks
+// Uses corsproxy.io to proxy Reddit API requests and avoid CORS/network issues
 
 export interface RedditPost {
   id: string;
@@ -48,27 +47,17 @@ type RedditPostAndCommentsResponse = [
   { data?: { children?: Array<RedditCommentsChild> } }
 ];
 
-// Try multiple Reddit endpoints to bypass network blocks
-const REDDIT_ENDPOINTS = [
-  "https://www.reddit.com",
-  "https://old.reddit.com",
-  "https://reddit.com",
-];
+// CORS proxy to bypass Reddit's CORS restrictions and network blocks
+const CORS_PROXY = "https://corsproxy.io/?";
 
-async function tryRedditEndpoint(
-  baseUrl: string,
-  path: string
-): Promise<Response> {
-  const url = `${baseUrl}${path}`;
-  const res = await fetch(url, {
-    cache: "no-store",
+async function fetchWithProxy(url: string): Promise<Response> {
+  const proxyUrl = `${CORS_PROXY}${encodeURIComponent(url)}`;
+  return fetch(proxyUrl, {
+    method: "GET",
     headers: {
-      "User-Agent":
-        "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
-      Accept: "application/json",
+      "Content-Type": "application/json",
     },
   });
-  return res;
 }
 
 export async function searchReddit(
@@ -77,25 +66,25 @@ export async function searchReddit(
   sort: "hot" | "new" | "top" | "relevance" = "top",
   t: "hour" | "day" | "week" | "month" | "year" | "all" = "day"
 ): Promise<RedditPost[]> {
-  // Try different search endpoints
-  const searchPaths = [
-    `/search.json?q=${encodeURIComponent(query)}&sort=${sort}&limit=${limit}${
-      sort === "top" ? `&t=${t}` : ""
-    }`,
-    `/r/all/search.json?q=${encodeURIComponent(
-      query
-    )}&sort=${sort}&limit=${limit}${sort === "top" ? `&t=${t}` : ""}`,
-    `/search.json?q=${encodeURIComponent(
-      query
-    )}&sort=${sort}&limit=${limit}&raw_json=1${
-      sort === "top" ? `&t=${t}` : ""
-    }`,
-  ];
+  try {
+    // Try different search endpoints
+    const searchUrls = [
+      `https://www.reddit.com/search.json?q=${encodeURIComponent(
+        query
+      )}&sort=${sort}&limit=${limit}${sort === "top" ? `&t=${t}` : ""}`,
+      `https://www.reddit.com/r/all/search.json?q=${encodeURIComponent(
+        query
+      )}&sort=${sort}&limit=${limit}${sort === "top" ? `&t=${t}` : ""}`,
+      `https://www.reddit.com/search.json?q=${encodeURIComponent(
+        query
+      )}&sort=${sort}&limit=${limit}&raw_json=1${
+        sort === "top" ? `&t=${t}` : ""
+      }`,
+    ];
 
-  for (const baseUrl of REDDIT_ENDPOINTS) {
-    for (const path of searchPaths) {
+    for (const url of searchUrls) {
       try {
-        const res = await tryRedditEndpoint(baseUrl, path);
+        const res = await fetchWithProxy(url);
         if (res.ok) {
           const json: RedditSearchResponse = await res.json();
           const children = json?.data?.children ?? [];
@@ -117,27 +106,23 @@ export async function searchReddit(
           }
         }
       } catch (error) {
-        console.warn(`Failed to fetch from ${baseUrl}${path}:`, error);
+        console.warn(`Failed to fetch from ${url}:`, error);
         continue;
       }
     }
-  }
 
-  // If all endpoints fail, try a different approach - fetch from popular subreddits
-  const popularSubreddits = [
-    "programming",
-    "technology",
-    "science",
-    "news",
-    "worldnews",
-  ];
-  for (const subreddit of popularSubreddits) {
-    for (const baseUrl of REDDIT_ENDPOINTS) {
+    // If search fails, try fetching from popular subreddits and filtering
+    const popularSubreddits = [
+      "programming",
+      "technology",
+      "science",
+      "news",
+      "worldnews",
+    ];
+    for (const subreddit of popularSubreddits) {
       try {
-        const res = await tryRedditEndpoint(
-          baseUrl,
-          `/r/${subreddit}/hot.json?limit=${limit}`
-        );
+        const url = `https://www.reddit.com/r/${subreddit}/hot.json?limit=${limit}`;
+        const res = await fetchWithProxy(url);
         if (res.ok) {
           const json: RedditSearchResponse = await res.json();
           const children = json?.data?.children ?? [];
@@ -173,67 +158,75 @@ export async function searchReddit(
           }
         }
       } catch (error) {
-        console.warn(`Failed to fetch from ${baseUrl}/r/${subreddit}:`, error);
+        console.warn(`Failed to fetch from r/${subreddit}:`, error);
         continue;
       }
     }
-  }
 
-  throw new Error(
-    "All Reddit endpoints failed. The service may be temporarily unavailable."
-  );
+    throw new Error(
+      "All Reddit endpoints failed. The service may be temporarily unavailable."
+    );
+  } catch (error) {
+    throw new Error(
+      `Failed to search Reddit: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
 }
 
 export async function fetchPostWithComments(
   permalink: string
 ): Promise<{ post: RedditPost; comments: RedditComment[] }> {
-  for (const baseUrl of REDDIT_ENDPOINTS) {
-    try {
-      const url = `${baseUrl}${permalink}.json?limit=100`;
-      const res = await fetch(url, {
-        cache: "no-store",
-        headers: {
-          "User-Agent":
-            "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
-          Accept: "application/json",
-        },
-      });
+  try {
+    const url = `https://www.reddit.com${permalink}.json?limit=100`;
+    const res = await fetchWithProxy(url);
 
-      if (res.ok) {
-        const json: RedditPostAndCommentsResponse = await res.json();
-        const postData = json[0]?.data?.children?.[0]?.data;
-        const commentsData = json[1]?.data?.children ?? [];
-
-        if (postData) {
-          const post: RedditPost = {
-            id: postData.id,
-            title: postData.title,
-            selftext: postData.selftext,
-            url: postData.url,
-            subreddit: postData.subreddit,
-            author: postData.author,
-            permalink: postData.permalink,
-            num_comments: postData.num_comments,
-          };
-
-          const comments: RedditComment[] = commentsData.map((c) => ({
-            id: c.data.id,
-            body: c.data.body,
-            author: c.data.author,
-            score: c.data.score,
-            created_utc: c.data.created_utc,
-          }));
-
-          return { post, comments };
-        }
-      }
-    } catch (error) {
-      console.warn(`Failed to fetch post from ${baseUrl}:`, error);
-      continue;
+    if (!res.ok) {
+      throw new Error(`Failed to fetch post (status ${res.status})`);
     }
-  }
 
-  throw new Error(
-    "Failed to fetch post and comments from all Reddit endpoints"
-  );
+    const json: RedditPostAndCommentsResponse = await res.json();
+    const postData = json[0]?.data?.children?.[0]?.data;
+    const commentsData = json[1]?.data?.children ?? [];
+
+    if (!postData) {
+      throw new Error("Post not found");
+    }
+
+    const post: RedditPost = {
+      id: postData.id,
+      title: postData.title,
+      selftext: postData.selftext,
+      url: postData.url,
+      subreddit: postData.subreddit,
+      author: postData.author,
+      permalink: postData.permalink,
+      num_comments: postData.num_comments,
+    };
+
+    const comments: RedditComment[] = commentsData
+      .filter(
+        (c) =>
+          c.kind === "t1" &&
+          c.data.body !== "[deleted]" &&
+          c.data.body !== "[removed]"
+      )
+      .map((c) => ({
+        id: c.data.id,
+        body: c.data.body,
+        author: c.data.author,
+        score: c.data.score,
+        created_utc: c.data.created_utc,
+      }))
+      .slice(0, 20); // Limit to top 20 comments
+
+    return { post, comments };
+  } catch (error) {
+    throw new Error(
+      `Failed to fetch post and comments: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
 }
