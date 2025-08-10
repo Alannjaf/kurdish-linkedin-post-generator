@@ -52,12 +52,16 @@ const REDDIT_ENDPOINTS = [
   "https://reddit.com",
 ];
 
-async function tryRedditEndpoint(baseUrl: string, path: string): Promise<Response> {
+async function tryRedditEndpoint(
+  baseUrl: string,
+  path: string
+): Promise<Response> {
   const url = `${baseUrl}${path}`;
   const res = await fetch(url, {
     cache: "no-store",
     headers: {
-      "User-Agent": "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
+      "User-Agent":
+        "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
       Accept: "application/json",
     },
   });
@@ -73,7 +77,8 @@ async function fetchPostWithComments(
       const res = await fetch(url, {
         cache: "no-store",
         headers: {
-          "User-Agent": "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
+          "User-Agent":
+            "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
           Accept: "application/json",
         },
       });
@@ -129,7 +134,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid permalink" }, { status: 400 });
   }
   try {
-    const { post, comments } = await fetchPostWithComments(parsed.data.permalink);
+    const { post, comments } = await fetchPostWithComments(
+      parsed.data.permalink
+    );
     return NextResponse.json({ post, comments });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed";

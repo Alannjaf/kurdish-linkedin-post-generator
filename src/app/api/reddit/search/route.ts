@@ -34,12 +34,16 @@ const REDDIT_ENDPOINTS = [
   "https://reddit.com",
 ];
 
-async function tryRedditEndpoint(baseUrl: string, path: string): Promise<Response> {
+async function tryRedditEndpoint(
+  baseUrl: string,
+  path: string
+): Promise<Response> {
   const url = `${baseUrl}${path}`;
   const res = await fetch(url, {
     cache: "no-store",
     headers: {
-      "User-Agent": "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
+      "User-Agent":
+        "kurdish-linkedin-post-generator/1.0 (+https://github.com/Alannjaf/kurdish-linkedin-post-generator)",
       Accept: "application/json",
     },
   });
@@ -57,10 +61,12 @@ async function searchReddit(
     `/search.json?q=${encodeURIComponent(query)}&sort=${sort}&limit=${limit}${
       sort === "top" ? `&t=${t}` : ""
     }`,
-    `/r/all/search.json?q=${encodeURIComponent(query)}&sort=${sort}&limit=${limit}${
-      sort === "top" ? `&t=${t}` : ""
-    }`,
-    `/search.json?q=${encodeURIComponent(query)}&sort=${sort}&limit=${limit}&raw_json=1${
+    `/r/all/search.json?q=${encodeURIComponent(
+      query
+    )}&sort=${sort}&limit=${limit}${sort === "top" ? `&t=${t}` : ""}`,
+    `/search.json?q=${encodeURIComponent(
+      query
+    )}&sort=${sort}&limit=${limit}&raw_json=1${
       sort === "top" ? `&t=${t}` : ""
     }`,
   ];
