@@ -11,6 +11,7 @@ type Post = {
   permalink: string;
   num_comments: number;
   subreddit: string;
+  created_utc: number;
 };
 
 export default function Home() {
@@ -47,14 +48,67 @@ export default function Home() {
   const [order, setOrder] = useState<"upvotes" | "comments" | "none">(
     "upvotes"
   );
-  
+
   // Model selection state
-  const [modelProvider, setModelProvider] = useState<"claude" | "gpt5">("claude");
-  const [gpt5Model, setGpt5Model] = useState<"gpt-5" | "gpt-5-mini" | "gpt-5-nano">("gpt-5-mini");
-  const [reasoningEffort, setReasoningEffort] = useState<"minimal" | "low" | "medium" | "high">("minimal");
-  const [verbosity, setVerbosity] = useState<"low" | "medium" | "high">("medium");
+  const [modelProvider, setModelProvider] = useState<"claude" | "gpt5">(
+    "claude"
+  );
+  const [gpt5Model, setGpt5Model] = useState<
+    "gpt-5" | "gpt-5-mini" | "gpt-5-nano"
+  >("gpt-5-mini");
+  const [reasoningEffort, setReasoningEffort] = useState<
+    "minimal" | "low" | "medium" | "high"
+  >("minimal");
+  const [verbosity, setVerbosity] = useState<"low" | "medium" | "high">(
+    "medium"
+  );
 
   //
+
+  // Narrowing helpers for localStorage values and select handlers
+  function isGpt5Model(
+    value: string
+  ): value is "gpt-5" | "gpt-5-mini" | "gpt-5-nano" {
+    return (
+      value === "gpt-5" || value === "gpt-5-mini" || value === "gpt-5-nano"
+    );
+  }
+
+  function isReasoningEffort(
+    value: string
+  ): value is "minimal" | "low" | "medium" | "high" {
+    return (
+      value === "minimal" ||
+      value === "low" ||
+      value === "medium" ||
+      value === "high"
+    );
+  }
+
+  function isVerbosity(value: string): value is "low" | "medium" | "high" {
+    return value === "low" || value === "medium" || value === "high";
+  }
+
+  function formatRelativeTime(createdUtcSeconds: number): string {
+    if (!createdUtcSeconds) return "";
+    const nowMs = Date.now();
+    const createdMs = createdUtcSeconds * 1000;
+    const diffSeconds = Math.max(1, Math.floor((nowMs - createdMs) / 1000));
+    const minutes = Math.floor(diffSeconds / 60);
+    const hours = Math.floor(diffSeconds / 3600);
+    const days = Math.floor(diffSeconds / 86400);
+    const weeks = Math.floor(diffSeconds / (86400 * 7));
+    const months = Math.floor(diffSeconds / (86400 * 30));
+    const years = Math.floor(diffSeconds / (86400 * 365));
+
+    if (diffSeconds < 60) return `${diffSeconds}s ago`;
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    if (weeks < 5) return `${weeks}w ago`;
+    if (months < 12) return `${months}mo ago`;
+    return `${years}y ago`;
+  }
 
   async function doSearch() {
     setLoadingSearch(true);
@@ -86,13 +140,18 @@ export default function Home() {
       const res = await fetch(
         `/api/reddit/post?permalink=${encodeURIComponent(permalink)}`
       );
-      const json: {
-        post: { title: string; selftext?: string };
-        comments: RedditComment[];
-      } = await res.json();
+      const json = (await res.json()) as {
+        post?: { title: string; selftext?: string };
+        comments?: RedditComment[];
+        error?: string;
+      };
+      if (!res.ok || json.error || !json.post) {
+        throw new Error(json.error || "Failed to load post");
+      }
+      const comments = json.comments ?? [];
       const text =
         `${json.post.title}\n\n${json.post.selftext ?? ""}\n\nTop comments:\n` +
-        json.comments
+        comments
           .slice(0, 10)
           .map((c) => `- ${c.author}: ${c.body}`)
           .join("\n");
@@ -197,9 +256,9 @@ export default function Home() {
       if (ue != null) setUseEmojis(ue === "true");
       if (uh != null) setUseHashtags(uh === "true");
       if (mp) setModelProvider(mp as "claude" | "gpt5");
-      if (gm) setGpt5Model(gm as any);
-      if (re) setReasoningEffort(re as any);
-      if (v) setVerbosity(v as any);
+      if (gm && isGpt5Model(gm)) setGpt5Model(gm);
+      if (re && isReasoningEffort(re)) setReasoningEffort(re);
+      if (v && isVerbosity(v)) setVerbosity(v);
     } catch {}
     doSearch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -328,9 +387,7 @@ export default function Home() {
                   className="border rounded-xl px-2 py-2 bg-white"
                   value={order}
                   onChange={(e) =>
-                    setOrder(
-                      e.target.value as "upvotes" | "comments" | "none"
-                    )
+                    setOrder(e.target.value as "upvotes" | "comments" | "none")
                   }
                   title="Sort order"
                 >
@@ -371,7 +428,8 @@ export default function Home() {
                       }`}
                     >
                       <div className="text-xs text-gray-500">
-                        r/{p.subreddit} • {p.num_comments} comments
+                        r/{p.subreddit} • {p.num_comments} comments •{" "}
+                        {formatRelativeTime(p.created_utc)}
                       </div>
                       <div className="font-medium line-clamp-2">{p.title}</div>
                       {p.selftext && (
@@ -389,6 +447,17 @@ export default function Home() {
 
               <div className="rounded-xl border border-black/5 bg-white p-3">
                 <h4 className="text-sm font-medium mb-2">Selected</h4>
+                {(() => {
+                  const selected = posts?.find(
+                    (p) => p.permalink === selectedPermalink
+                  );
+                  return selected ? (
+                    <div className="text-xs text-gray-500 mb-2">
+                      r/{selected.subreddit} • {selected.num_comments} comments
+                      • {formatRelativeTime(selected.created_utc)}
+                    </div>
+                  ) : null;
+                })()}
                 {loadingPost ? (
                   <div className="h-64 rounded-lg border bg-white/60 p-3 animate-pulse space-y-2">
                     {Array.from({ length: 6 }).map((_, i) => (
@@ -406,7 +475,12 @@ export default function Home() {
 
                 <div className="flex items-center justify-between mt-3">
                   <div className="text-xs text-gray-500">
-                    Using: {modelProvider === "claude" ? "Claude (Anthropic)" : `GPT-5 ${gpt5Model.split("-").pop()?.toUpperCase() || ""} (OpenAI)`}
+                    Using:{" "}
+                    {modelProvider === "claude"
+                      ? "Claude (Anthropic)"
+                      : `GPT-5 ${
+                          gpt5Model.split("-").pop()?.toUpperCase() || ""
+                        } (OpenAI)`}
                   </div>
                 </div>
 
@@ -690,7 +764,7 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-              
+
               {/* Model Selection */}
               <div>
                 <label className="block text-xs font-medium text-gray-600">
@@ -719,7 +793,7 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-              
+
               {/* GPT-5 Settings */}
               {modelProvider === "gpt5" && (
                 <>
@@ -730,14 +804,17 @@ export default function Home() {
                     <select
                       className="w-full border rounded-lg px-3 py-2 bg-white mt-1"
                       value={gpt5Model}
-                      onChange={(e) => setGpt5Model(e.target.value as any)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (isGpt5Model(value)) setGpt5Model(value);
+                      }}
                     >
                       <option value="gpt-5">GPT-5 (Complex tasks)</option>
                       <option value="gpt-5-mini">GPT-5 Mini (Balanced)</option>
                       <option value="gpt-5-nano">GPT-5 Nano (Fast)</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-xs font-medium text-gray-600">
                       Reasoning Effort
@@ -745,7 +822,10 @@ export default function Home() {
                     <select
                       className="w-full border rounded-lg px-3 py-2 bg-white mt-1"
                       value={reasoningEffort}
-                      onChange={(e) => setReasoningEffort(e.target.value as any)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (isReasoningEffort(value)) setReasoningEffort(value);
+                      }}
                     >
                       <option value="minimal">Minimal (Fastest)</option>
                       <option value="low">Low</option>
@@ -753,7 +833,7 @@ export default function Home() {
                       <option value="high">High (Most thorough)</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-xs font-medium text-gray-600">
                       Output Verbosity
@@ -761,7 +841,10 @@ export default function Home() {
                     <select
                       className="w-full border rounded-lg px-3 py-2 bg-white mt-1"
                       value={verbosity}
-                      onChange={(e) => setVerbosity(e.target.value as any)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (isVerbosity(value)) setVerbosity(value);
+                      }}
                     >
                       <option value="low">Low (Concise)</option>
                       <option value="medium">Medium</option>

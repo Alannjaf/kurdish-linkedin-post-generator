@@ -11,6 +11,7 @@ export interface RedditPost {
   permalink: string;
   num_comments: number;
   score: number;
+  created_utc: number;
 }
 
 export interface RedditComment {
@@ -102,6 +103,8 @@ export async function searchReddit(
                 permalink: d.permalink,
                 num_comments: d.num_comments,
                 score: d.score ?? 0,
+                created_utc:
+                  (d as unknown as { created_utc?: number }).created_utc ?? 0,
               };
               return post;
             });
@@ -154,6 +157,8 @@ export async function searchReddit(
                   permalink: d.permalink,
                   num_comments: d.num_comments,
                   score: d.score ?? 0,
+                  created_utc:
+                    (d as unknown as { created_utc?: number }).created_utc ?? 0,
                 };
                 return post;
               });
@@ -207,6 +212,7 @@ export async function fetchPostWithComments(
       permalink: postData.permalink,
       num_comments: postData.num_comments,
       score: (postData as { score?: number }).score ?? 0,
+      created_utc: (postData as { created_utc?: number }).created_utc ?? 0,
     };
 
     const comments: RedditComment[] = commentsData
