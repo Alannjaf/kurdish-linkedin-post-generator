@@ -101,7 +101,7 @@ export async function searchReddit(
                 author: d.author,
                 permalink: d.permalink,
                 num_comments: d.num_comments,
-                score: (d as any).score ?? 0,
+                score: d.score ?? 0,
               };
               return post;
             });
@@ -153,7 +153,7 @@ export async function searchReddit(
                   author: d.author,
                   permalink: d.permalink,
                   num_comments: d.num_comments,
-                  score: (d as any).score ?? 0,
+                  score: d.score ?? 0,
                 };
                 return post;
               });
@@ -206,7 +206,7 @@ export async function fetchPostWithComments(
       author: postData.author,
       permalink: postData.permalink,
       num_comments: postData.num_comments,
-      score: (postData as any).score ?? 0,
+      score: (postData as { score?: number }).score ?? 0,
     };
 
     const comments: RedditComment[] = commentsData
