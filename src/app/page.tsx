@@ -47,6 +47,12 @@ export default function Home() {
   const [order, setOrder] = useState<"upvotes" | "comments" | "none">(
     "upvotes"
   );
+  
+  // Model selection state
+  const [modelProvider, setModelProvider] = useState<"claude" | "gpt5">("claude");
+  const [gpt5Model, setGpt5Model] = useState<"gpt-5" | "gpt-5-mini" | "gpt-5-nano">("gpt-5-mini");
+  const [reasoningEffort, setReasoningEffort] = useState<"minimal" | "low" | "medium" | "high">("minimal");
+  const [verbosity, setVerbosity] = useState<"low" | "medium" | "high">("medium");
 
   //
 
@@ -124,6 +130,35 @@ export default function Home() {
     }
   }
 
+  async function runGPT5() {
+    setLoadingClaude(true);
+    try {
+      const res = await fetch("/api/openai-post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apiKey: openaiKey || undefined,
+          style,
+          hook,
+          text: selectedText,
+          useEmojis,
+          useHashtags,
+          model: gpt5Model,
+          reasoningEffort,
+          verbosity,
+        }),
+      });
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      setSorani(json.sorani);
+      setImagePrompt(json.imagePrompt);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingClaude(false);
+    }
+  }
+
   async function runImage() {
     setLoadingImage(true);
     try {
@@ -153,10 +188,18 @@ export default function Home() {
       const o = localStorage.getItem("openai_key");
       const ue = localStorage.getItem("use_emojis");
       const uh = localStorage.getItem("use_hashtags");
+      const mp = localStorage.getItem("model_provider");
+      const gm = localStorage.getItem("gpt5_model");
+      const re = localStorage.getItem("reasoning_effort");
+      const v = localStorage.getItem("verbosity");
       if (a) setAnthropicKey(a);
       if (o) setOpenaiKey(o);
       if (ue != null) setUseEmojis(ue === "true");
       if (uh != null) setUseHashtags(uh === "true");
+      if (mp) setModelProvider(mp as "claude" | "gpt5");
+      if (gm) setGpt5Model(gm as any);
+      if (re) setReasoningEffort(re as any);
+      if (v) setVerbosity(v as any);
     } catch {}
     doSearch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -185,6 +228,30 @@ export default function Home() {
       localStorage.setItem("use_hashtags", String(useHashtags));
     } catch {}
   }, [useHashtags]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("model_provider", modelProvider);
+    } catch {}
+  }, [modelProvider]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("gpt5_model", gpt5Model);
+    } catch {}
+  }, [gpt5Model]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("reasoning_effort", reasoningEffort);
+    } catch {}
+  }, [reasoningEffort]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("verbosity", verbosity);
+    } catch {}
+  }, [verbosity]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white">
@@ -337,10 +404,16 @@ export default function Home() {
                   />
                 )}
 
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className="flex items-center justify-between mt-3">
+                  <div className="text-xs text-gray-500">
+                    Using: {modelProvider === "claude" ? "Claude (Anthropic)" : `GPT-5 ${gpt5Model.split("-").pop()?.toUpperCase() || ""} (OpenAI)`}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mt-2">
                   <button
                     className="px-4 py-2 rounded-lg text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 disabled:opacity-60"
-                    onClick={runClaude}
+                    onClick={modelProvider === "claude" ? runClaude : runGPT5}
                     disabled={!selectedText || loadingClaude}
                   >
                     {loadingClaude ? "Generating Sorani…" : "Generate Sorani"}
@@ -617,6 +690,86 @@ export default function Home() {
                   </button>
                 </div>
               </div>
+              
+              {/* Model Selection */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600">
+                  Model Provider
+                </label>
+                <div className="flex gap-2 mt-1">
+                  <button
+                    className={`px-3 py-2 text-xs rounded-lg border ${
+                      modelProvider === "claude"
+                        ? "border-indigo-600 bg-indigo-50 text-indigo-600"
+                        : "bg-white hover:bg-gray-50"
+                    }`}
+                    onClick={() => setModelProvider("claude")}
+                  >
+                    Claude (Anthropic)
+                  </button>
+                  <button
+                    className={`px-3 py-2 text-xs rounded-lg border ${
+                      modelProvider === "gpt5"
+                        ? "border-indigo-600 bg-indigo-50 text-indigo-600"
+                        : "bg-white hover:bg-gray-50"
+                    }`}
+                    onClick={() => setModelProvider("gpt5")}
+                  >
+                    GPT-5 (OpenAI)
+                  </button>
+                </div>
+              </div>
+              
+              {/* GPT-5 Settings */}
+              {modelProvider === "gpt5" && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600">
+                      GPT-5 Model
+                    </label>
+                    <select
+                      className="w-full border rounded-lg px-3 py-2 bg-white mt-1"
+                      value={gpt5Model}
+                      onChange={(e) => setGpt5Model(e.target.value as any)}
+                    >
+                      <option value="gpt-5">GPT-5 (Complex tasks)</option>
+                      <option value="gpt-5-mini">GPT-5 Mini (Balanced)</option>
+                      <option value="gpt-5-nano">GPT-5 Nano (Fast)</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600">
+                      Reasoning Effort
+                    </label>
+                    <select
+                      className="w-full border rounded-lg px-3 py-2 bg-white mt-1"
+                      value={reasoningEffort}
+                      onChange={(e) => setReasoningEffort(e.target.value as any)}
+                    >
+                      <option value="minimal">Minimal (Fastest)</option>
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High (Most thorough)</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600">
+                      Output Verbosity
+                    </label>
+                    <select
+                      className="w-full border rounded-lg px-3 py-2 bg-white mt-1"
+                      value={verbosity}
+                      onChange={(e) => setVerbosity(e.target.value as any)}
+                    >
+                      <option value="low">Low (Concise)</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High (Detailed)</option>
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
