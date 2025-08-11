@@ -44,6 +44,9 @@ export default function Home() {
   const [loadingImage, setLoadingImage] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState<"preview" | "image">("preview");
+  const [order, setOrder] = useState<"upvotes" | "comments" | "none">(
+    "upvotes"
+  );
 
   //
 
@@ -54,7 +57,9 @@ export default function Home() {
       const res = await fetch(
         `/api/reddit/search?q=${encodeURIComponent(
           query
-        )}&sort=relevance&t=${timeframe}&titleOnly=true`
+        )}&sort=trending&t=${timeframe}&titleOnly=true${
+          order !== "none" ? `&order=${order}` : ""
+        }`
       );
       const json = await res.json();
       setPosts(json.posts ?? []);
@@ -251,6 +256,20 @@ export default function Home() {
                   <option value="month">Top this month</option>
                   <option value="year">Top this year</option>
                   <option value="all">Top all time</option>
+                </select>
+                <select
+                  className="border rounded-xl px-2 py-2 bg-white"
+                  value={order}
+                  onChange={(e) =>
+                    setOrder(
+                      e.target.value as "upvotes" | "comments" | "none"
+                    )
+                  }
+                  title="Sort order"
+                >
+                  <option value="upvotes">Most upvotes</option>
+                  <option value="comments">Most comments</option>
+                  <option value="none">Default order</option>
                 </select>
                 <button
                   className="px-4 py-3 rounded-xl text-white bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:opacity-90 disabled:opacity-60"
